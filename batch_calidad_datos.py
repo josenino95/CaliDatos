@@ -2,6 +2,8 @@
 import pandas as pd
 from datetime import date
 from funciones_calidad import *
+from utils.utils import *
+from utils.log import *
 
 def batch_calidad_datos(
     archivo_datos, archivo_datos_dic, 
