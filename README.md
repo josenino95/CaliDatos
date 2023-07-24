@@ -16,7 +16,7 @@ pip install -r requirements.txt
 
 ### Usage
 
-To use this data quality program, just use the notebook "1. Calidad de datos.ipynb"
+To use this data quality program, just use the notebook "1. Calidad de datos.ipynb".
 
 ## Author
 * Jose David Niño Muriel
