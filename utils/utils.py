@@ -6,13 +6,129 @@ import numpy as np
 from tqdm import trange
 
 def dif_tiempo_a_texto(time):
-    tiempo = str(math.floor(time / 86400)) + "d, " +  \
+    """
+    Converts a given time in seconds to a string representation in the format of days, hours, minutes, and seconds.
+
+    This function takes as input a time duration in seconds, converts it into days, hours, minutes, and seconds, 
+    and then returns a string representation of this duration. The output string format is "xd, yhr, zmin, wsec", 
+    where x, y, z, and w represent the number of days, hours, minutes, and seconds, respectively.
+
+    Parameters
+    ----------
+    time : float
+        The time duration in seconds to be converted.
+
+    Returns
+    -------
+    str
+        A string representation of the time duration in the format of "xd, yhr, zmin, wsec".
+
+    Notes
+    -----
+    The function uses `math.floor` for each conversion, so the resulting time components are rounded down to 
+    the nearest integer. For seconds, the function rounds down to three decimal places.
+
+    Examples
+    --------
+    >>> dif_tiempo_a_texto(3661)
+    '0d, 1hr, 1min, 1.0sec'
+    
+    >>> dif_tiempo_a_texto(86461)
+    '1d, 0hr, 1min, 1.0sec'
+    """
+    time = str(math.floor(time / 86400)) + "d, " +  \
     str(math.floor(time % 86400 / 3600)) + "hr, " +  \
     str(math.floor((time % 86400) % 3600 / 60)) + "min, " +  \
     str(math.floor((((time % 86400) % 3600) % 60)*1000)/1000.0) + "sec "
-    return tiempo
+    return time
+
+def identificar_tipo_dominio(dominio_campo):
+    """
+    Identifies the domain type of a given string.
+
+    This function receives a string and identifies its domain type based on the characteristics of the string.
+    The domain types can be one of seven categories: '1. Intervalo Cerrado-Cerrado', '2. Intervalo Cerrado-Abierto',
+    '3. Intervalo Abierto-Cerrado', '4. Intervalo Abierto-Abierto', '5. Tabla anexa', '6. Lista (Separado por comas)', 
+    and '7. No disponible'.
+
+    Parameters
+    ----------
+    dominio_campo : str
+        The string whose domain type is to be identified.
+
+    Returns
+    -------
+    str
+        A string representation of the domain type of the input string.
+
+    Examples
+    --------
+    >>> identificar_tipo_dominio('[1,2]')
+    '1. Intervalo Cerrado-Cerrado'
+
+    >>> identificar_tipo_dominio('nan')
+    '7. No disponible'
+
+    >>> identificar_tipo_dominio('(1,2)')
+    '4. Intervalo Abierto-Abierto'
+    """
+    if dominio_campo == 'nan' or dominio_campo == '' :
+        tipo_dominio_i = '7. No disponible'
+    elif dominio_campo.startswith('[') and dominio_campo.endswith(']'):
+        tipo_dominio_i = '1. Intervalo Cerrado-Cerrado'
+    elif dominio_campo.startswith('[') and dominio_campo.endswith(')'):
+        tipo_dominio_i = '2. Intervalo Cerrado-Abierto'
+    elif dominio_campo.startswith('(') and dominio_campo.endswith(']'):
+        tipo_dominio_i = '3. Intervalo Abierto-Cerrado'
+    elif dominio_campo.startswith('(') and dominio_campo.endswith(')'):
+        tipo_dominio_i = '4. Intervalo Abierto-Abierto'
+    elif dominio_campo.upper().startswith('VER TABLA'):
+        tipo_dominio_i = '5. Tabla anexa'
+    else:
+        tipo_dominio_i = '6. Lista (Separado por comas)'
+    return tipo_dominio_i
 
 def lectura_datos(fecha_corte, archivo_datos, hoja_datos, rango_columnas=None, inicial_fila=None):
+    """
+    Read data from an Excel sheet and return the DataFrame along with a message regarding duplicate column names.
+
+    This function reads data from a specified sheet of an Excel file and generates a message if there are any 
+    duplicate column names. Additionally, it creates a summary file with the results of the data quality analysis.
+
+    Parameters
+    ----------
+    fecha_corte : str
+        The date of the cut-off, used for naming the summary file and the columns in the summary DataFrame.
+    
+    archivo_datos : str
+        The path to the Excel file to read data from.
+    
+    hoja_datos : str
+        The name of the sheet in the Excel file to read data from.
+
+    rango_columnas : list of str, optional
+        The range of columns to read from the sheet. If not provided, all columns are read.
+
+    inicial_fila : int, optional
+        The index of the first row of data to read from the sheet. If not provided, all rows are read.
+
+    Returns
+    -------
+    df : pandas.DataFrame
+        The DataFrame created from the data in the specified Excel sheet.
+
+    mensaje : str
+        A message indicating whether there are any duplicate column names in the data.
+
+    Notes
+    -----
+    This function uses the `pd.read_excel` function from the pandas library to read data from an Excel file. 
+    It also uses the `pd.ExcelWriter` function to write data to an Excel file.
+
+    Examples
+    --------
+    >>> df, msg = lectura_datos("2023-07-23", "data.xlsx", "Sheet1")
+    """
     # Leer datos
     df = pd.read_excel(archivo_datos, sheet_name=hoja_datos, usecols=rango_columnas, skiprows=inicial_fila-1)
     # Leer nombres de columnas y generar mensaje si hay o no nombres repetidos
@@ -53,24 +169,66 @@ def lectura_datos(fecha_corte, archivo_datos, hoja_datos, rango_columnas=None, i
 
     return df, mensaje
 
-def identificar_tipo_dominio(dominio_campo):
-    if dominio_campo == 'nan' or dominio_campo == '' :
-        tipo_dominio_i = '7. No disponible'
-    elif dominio_campo.startswith('[') and dominio_campo.endswith(']'):
-        tipo_dominio_i = '1. Intervalo Cerrado-Cerrado'
-    elif dominio_campo.startswith('[') and dominio_campo.endswith(')'):
-        tipo_dominio_i = '2. Intervalo Cerrado-Abierto'
-    elif dominio_campo.startswith('(') and dominio_campo.endswith(']'):
-        tipo_dominio_i = '3. Intervalo Abierto-Cerrado'
-    elif dominio_campo.startswith('(') and dominio_campo.endswith(')'):
-        tipo_dominio_i = '4. Intervalo Abierto-Abierto'
-    elif dominio_campo.upper().startswith('VER TABLA'):
-        tipo_dominio_i = '5. Tabla anexa'
-    else:
-        tipo_dominio_i = '6. Lista (Separado por comas)'
-    return tipo_dominio_i
+
 
 def lectura_diccionario(archivo_datos, hoja_datos, rango_columnas=None, inicial_fila=None):
+    """
+    Read data from an Excel sheet into a DataFrame and identify various field characteristics.
+
+    This function reads data from a specified sheet of an Excel file into a DataFrame. It identifies various
+    field characteristics like primary key, mandatory fields, domain type, domain, data type, and length.
+
+    Parameters
+    ----------
+    archivo_datos : str
+        The path to the Excel file to read data from.
+    
+    hoja_datos : str
+        The name of the sheet in the Excel file to read data from.
+
+    rango_columnas : list of str, optional
+        The range of columns to read from the sheet. If not provided, all columns are read.
+
+    inicial_fila : int, optional
+        The index of the first row of data to read from the sheet. If not provided, all rows are read.
+
+    Returns
+    -------
+    df : pandas.DataFrame
+        The DataFrame created from the data in the specified Excel sheet.
+
+    columnas_dicc : list
+        List of field names in the data.
+
+    llave_primaria : list
+        List of field names that are primary keys.
+
+    campos_obligatorios : list
+        List of field names that are mandatory.
+
+    tipo_dominio : dict
+        Dictionary mapping field names to their domain types.
+
+    dominio : dict
+        Dictionary mapping field names to their domains.
+
+    tipo_dato : dict
+        Dictionary mapping field names to their data types.
+
+    longitud : dict
+        Dictionary mapping field names to their lengths.
+
+    mensaje : str
+        A message indicating the status of the process.
+
+    Notes
+    -----
+    This function uses the `pd.read_excel` function from the pandas library to read data from an Excel file. 
+
+    Examples
+    --------
+    >>> df, cols, primary_keys, mandatory_fields, domain_types, domains, data_types, lengths, msg = lectura_diccionario("data.xlsx", "Sheet1")
+    """
     df = pd.read_excel(archivo_datos, sheet_name=hoja_datos, usecols=rango_columnas, skiprows=inicial_fila-1)
     # Inicializar elementos que se van a guardar
     columnas_dicc = []
